@@ -15,8 +15,8 @@ defmodule Absinthe.Relay.Schema.Notation do
   @default_flavor :classic
 
   @flavor_namespaces [
-    modern: Modern,
-    classic: Classic
+    modern: Absinthe.Relay.Mutation.Notation.Modern,
+    classic: Absinthe.Relay.Mutation.Notation.Classic
   ]
 
   defmacro __using__(flavor) when flavor in @valid_flavors do
@@ -44,9 +44,10 @@ defmodule Absinthe.Relay.Schema.Notation do
 
   @spec notations(flavor) :: Macro.t()
   defp notations(flavor) do
-    mutation_notation = Absinthe.Relay.Mutation.Notation |> flavored(flavor)
+    mutation_notation = flavored(flavor)
 
     quote do
+
       import Absinthe.Relay.Node.Notation, only: :macros
       import Absinthe.Relay.Node.Helpers
       import Absinthe.Relay.Connection.Notation, only: :macros
@@ -54,9 +55,13 @@ defmodule Absinthe.Relay.Schema.Notation do
     end
   end
 
-  @spec flavored(module, flavor) :: module
-  defp flavored(module, flavor) do
-    Module.safe_concat(module, Keyword.fetch!(@flavor_namespaces, flavor))
+  @spec flavored(flavor) :: module
+  defp flavored(flavor) do
+    Keyword.fetch!(@flavor_namespaces, flavor)
+    |> Code.ensure_loaded
+    |> case do
+	 {:module, mod} -> mod
+       end
   end
 
   @doc false
